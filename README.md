@@ -10,7 +10,12 @@ A better and interactive `pnpm patch`.
 npx pnpm-patch-i package-name
 ```
 
-It will open the temp folder in your editor, and wait for your changes. Once you are done, it will automatically run `pnpm commit-patch` for you.
+This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provide a better interactive experience:
+
+- Have the patch dir under your local `node_modules/` folder instead of a global temp folder
+- More human-friendly folder name instead of random string
+- Open the editing folder in your editor via [`launch-editor`](https://github.com/yyx990803/launch-editor)
+- Wait for your changes and automatically run `pnpm commit-patch <dir>` for you
 
 ## Sponsors
 
