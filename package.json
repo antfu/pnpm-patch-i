@@ -25,9 +25,6 @@
       "import": "./dist/cli.mjs"
     }
   },
-  "bin": {
-    "pnpm-patch-i": "./pnpm-patch-i.mjs"
-  },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -38,6 +35,9 @@
         "./dist/index.d.ts"
       ]
     }
+  },
+  "bin": {
+    "pnpm-patch-i": "./pnpm-patch-i.mjs"
   },
   "files": [
     "dist",
@@ -51,6 +51,13 @@
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "execa": "^6.1.0",
+    "launch-editor": "^2.6.0",
+    "nanoid": "^4.0.0",
+    "picocolors": "^1.0.0",
+    "prompts": "^2.4.2"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^0.34.1",
@@ -69,12 +76,5 @@
     "unbuild": "^1.1.1",
     "vite": "^4.0.4",
     "vitest": "^0.27.2"
-  },
-  "dependencies": {
-    "picocolors": "^1.0.0",
-    "execa": "^6.1.0",
-    "launch-editor": "^2.6.0",
-    "nanoid": "^4.0.0",
-    "prompts": "^2.4.2"
   }
 }
