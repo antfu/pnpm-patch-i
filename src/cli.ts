@@ -1,12 +1,11 @@
 import { startPatch } from '.'
 
-const args = process.argv.slice(2)
-const name = args[args.length === 1 ? 0 : 1]
-const ignoreExisting = args[0] === '--ignore-existing'
+const options = process.argv.slice(2)
+const name = options.pop()
 
 if (!name) {
-  console.error('$ pnpm-patch-i [--ignore-existing] <package-name>')
+  console.error('$ pnpm-patch-i <package-name>')
   process.exit(1)
 }
 
-startPatch(name, ignoreExisting)
+startPatch(name, options)
