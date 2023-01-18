@@ -1,8 +1,11 @@
 import { startPatch } from '.'
 
-if (!process.argv[2]) {
+const options = process.argv.slice(2)
+const name = options.pop()
+
+if (!name) {
   console.error('$ pnpm-patch-i <package-name>')
   process.exit(1)
 }
 
-startPatch(process.argv[2])
+startPatch(name, options)
