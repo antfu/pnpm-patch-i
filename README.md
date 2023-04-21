@@ -17,6 +17,14 @@ This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provide a bett
 - Open the editing folder in your editor via [`launch-editor`](https://github.com/yyx990803/launch-editor)
 - Wait for your changes and automatically run `pnpm commit-patch <dir>` for you
 
+### Apply Patch from a directory
+
+It's also possible to apply a patch directly from a directory (normally a local build of the package), for example
+
+```bash
+npx pnpm-patch-i vite ../vite/packages/vite
+```
+
 ## Sponsors
 
 <p align="center">

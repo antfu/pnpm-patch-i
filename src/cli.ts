@@ -1,11 +1,12 @@
 import { startPatch } from '.'
 
-const options = process.argv.slice(2)
-const name = options.pop()
+const [name, ...rest] = process.argv.slice(2)
+const options = rest.filter(i => i.startsWith('-'))
+const [dir] = rest.filter(i => !i.startsWith('-'))
 
 if (!name) {
-  console.error('$ pnpm-patch-i <package-name>')
+  console.error('$ pnpm-patch-i <package-name> [dir]')
   process.exit(1)
 }
 
-startPatch(name, options)
+startPatch(name, options, dir)

@@ -55,7 +55,9 @@
   "dependencies": {
     "execa": "^7.1.1",
     "launch-editor": "^2.6.0",
+    "micromatch": "^4.0.5",
     "nanoid": "^4.0.2",
+    "pathe": "^1.1.0",
     "picocolors": "^1.0.0",
     "prompts": "^2.4.2"
   },
@@ -64,6 +66,7 @@
     "@antfu/ni": "^0.21.3",
     "@antfu/utils": "^0.7.2",
     "@types/fs-extra": "^11.0.1",
+    "@types/micromatch": "^4.0.2",
     "@types/node": "^18.15.13",
     "@types/prompts": "^2.4.4",
     "bumpp": "^9.1.0",
