@@ -22,12 +22,12 @@ export async function startPatch(name: string, options: string[], distDir?: stri
 
     console.log(`Edit your patch for ${c.bold(c.yellow(name))} under ${c.green(dir)}\n`)
 
-    const { confirm } = await prompts([{
+    const confirm = await prompts([{
       name: 'confirm',
       type: 'confirm',
       message: 'Finish editing and commit the patch?',
       initial: true,
-    }])
+    }]).then(r => r.confirm)
 
     if (!confirm) {
       console.log(c.yellow('\nOperation cancelled'))
@@ -37,12 +37,12 @@ export async function startPatch(name: string, options: string[], distDir?: stri
   else {
     const packageJSON = await fs.readJSON(join(distDir, 'package.json'))
 
-    const { confirm } = await prompts([{
+    const confirm = options.includes('-y') || await prompts([{
       name: 'confirm',
       type: 'confirm',
       message: `Applying patch from ${distDir}?`,
       initial: true,
-    }])
+    }]).then(r => r.confirm)
 
     if (!confirm) {
       console.log(c.yellow('\nOperation cancelled'))
