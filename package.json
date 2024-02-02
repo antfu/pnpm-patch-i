@@ -55,6 +55,7 @@
   "dependencies": {
     "cac": "^6.7.14",
     "execa": "^8.0.1",
+    "fs-extra": "^11.2.0",
     "launch-editor": "^2.6.1",
     "micromatch": "^4.0.5",
     "nanoid": "^5.0.5",
@@ -73,7 +74,6 @@
     "bumpp": "^9.3.0",
     "eslint": "^8.56.0",
     "esno": "^4.0.0",
-    "fs-extra": "^11.2.0",
     "pnpm": "^8.15.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3",
