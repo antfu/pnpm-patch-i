@@ -129,7 +129,4 @@ export async function startPatch(options: StartPatchOptions) {
   console.log(c.blue('\nCommiting patch...'))
 
   await execa('pnpm', ['patch-commit', editDir], { stdio: 'inherit' })
-
-  await fs.unlink(editDir)
-    .catch()
 }
