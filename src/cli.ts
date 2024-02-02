@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { startPatch } from '.'
 
 const [name, ...rest] = process.argv.slice(2)
