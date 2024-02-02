@@ -55,7 +55,7 @@ export async function startPatch(options: StartPatchOptions) {
   }
   else {
     const sourcePath = resolve(sourceDir)
-    const packageJSON = await fs.readJSON(join(sourcePath, 'package.json'))
+    const sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
 
     const confirm = yes || await prompts([{
       name: 'confirm',
@@ -72,8 +72,8 @@ export async function startPatch(options: StartPatchOptions) {
     if (build)
       await execa('npm', ['run', 'build'], { stdio: 'inherit', cwd: sourcePath })
 
-    const glob = packageJSON.files
-      ? packageJSON.files.flatMap((i: string) => i.includes('*') ? [i] : [i, `${i}/**`])
+    const glob = sourcePkg.files
+      ? sourcePkg.files.flatMap((i: string) => i.includes('*') ? [i] : [i, `${i}/**`])
       : undefined
 
     const filter = (src: string) => {
@@ -98,16 +98,18 @@ export async function startPatch(options: StartPatchOptions) {
       },
     })
 
-    const localPackageJSON = await fs.readJSON(join(editDir, 'package.json'))
-    const newPackageJSON = {
-      ...localPackageJSON,
-      name,
-      version: packageJSON.version,
-      dependencies: handleDeps(localPackageJSON.dependencies, packageJSON.dependencies),
-      devDependencies: handleDeps(localPackageJSON.devDependencies, packageJSON.devDependencies),
-      peerDependencies: handleDeps(localPackageJSON.peerDependencies, packageJSON.peerDependencies),
-      optionalDependencies: handleDeps(localPackageJSON.optionalDependencies, packageJSON.optionalDependencies),
-    }
+    const localPkg = await fs.readJSON(join(editDir, 'package.json'))
+    const newPkg = { ...sourcePkg }
+
+    newPkg.version = localPkg.version
+    if (newPkg.dependencies)
+      newPkg.dependencies = handleDeps(localPkg.dependencies, sourcePkg.dependencies)
+    if (newPkg.devDependencies)
+      newPkg.devDependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies)
+    if (newPkg.peerDependencies)
+      newPkg.peerDependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies)
+    if (newPkg.optionalDependencies)
+      newPkg.optionalDependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies)
 
     function handleDeps(local?: Record<string, string>, overrides?: Record<string, string>) {
       if (!overrides)
@@ -121,7 +123,7 @@ export async function startPatch(options: StartPatchOptions) {
       })
     }
 
-    await fs.writeJSON(join(editDir, 'package.json'), newPackageJSON, { spaces: 2 })
+    await fs.writeJSON(join(editDir, 'package.json'), newPkg, { spaces: 2 })
   }
 
   console.log(c.blue('\nCommiting patch...'))
