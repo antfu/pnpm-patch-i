@@ -121,6 +121,7 @@ export async function startPatch(options: StartPatchOptions) {
         else
           clone[key] = value
       })
+      return clone
     }
 
     await fs.writeJSON(join(editDir, 'package.json'), newPkg, { spaces: 2 })
