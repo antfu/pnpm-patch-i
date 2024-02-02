@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { join, relative } from 'pathe'
+import { join, relative, resolve } from 'pathe'
 import { customAlphabet } from 'nanoid/non-secure'
 import { execa } from 'execa'
 import fs from 'fs-extra'
@@ -12,17 +12,36 @@ import c from 'picocolors'
 
 const nanoid = customAlphabet('1234567890abcdef', 10)
 
-export async function startPatch(name: string, options: string[], distDir?: string) {
-  const dir = `node_modules/.patch-edits/patch_edit_${name.replace(/\//g, '+')}_${nanoid()}`
+export interface StartPatchOptions {
+  name: string
+  yes?: boolean
+  sourceDir?: string
+  build?: boolean
+  pnpmOptions?: string[]
+}
 
-  await execa('pnpm', ['patch', ...options, '--edit-dir', dir, name], { stdio: 'inherit' })
+export async function startPatch(options: StartPatchOptions) {
+  const {
+    name,
+    sourceDir,
+    yes,
+    build,
+    pnpmOptions = [],
+  } = options
 
-  if (!distDir) {
-    await launch(dir)
+  const editDir = `node_modules/.patch-edits/patch_edit_${name.replace(/\//g, '+')}_${nanoid()}`
 
-    console.log(`Edit your patch for ${c.bold(c.yellow(name))} under ${c.green(dir)}\n`)
+  await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, name], { stdio: 'inherit' })
 
-    const confirm = await prompts([{
+  if (!sourceDir) {
+    await launch(editDir)
+
+    if (build)
+      throw new Error('--build is not supported when sourceDir is not specified')
+
+    console.log(`Edit your patch for ${c.bold(c.yellow(name))} under ${c.green(editDir)}\n`)
+
+    const confirm = yes || await prompts([{
       name: 'confirm',
       type: 'confirm',
       message: 'Finish editing and commit the patch?',
@@ -35,12 +54,13 @@ export async function startPatch(name: string, options: string[], distDir?: stri
     }
   }
   else {
-    const packageJSON = await fs.readJSON(join(distDir, 'package.json'))
+    const sourcePath = resolve(sourceDir)
+    const packageJSON = await fs.readJSON(join(sourcePath, 'package.json'))
 
-    const confirm = options.includes('-y') || await prompts([{
+    const confirm = yes || await prompts([{
       name: 'confirm',
       type: 'confirm',
-      message: `Applying patch from ${distDir}?`,
+      message: `Applying patch from ${options.sourceDir}?`,
       initial: true,
     }]).then(r => r.confirm)
 
@@ -49,12 +69,15 @@ export async function startPatch(name: string, options: string[], distDir?: stri
       return
     }
 
+    if (build)
+      await execa('npm', ['run', 'build'], { stdio: 'inherit', cwd: sourcePath })
+
     const glob = packageJSON.files
       ? packageJSON.files.flatMap((i: string) => i.includes('*') ? [i] : [i, `${i}/**`])
       : undefined
 
     const filter = (src: string) => {
-      const relativePath = relative(distDir, src)
+      const relativePath = relative(sourcePath, src)
       if (!relativePath)
         return true
       if (relativePath.includes('node_modules') || relativePath === 'package.json')
@@ -65,7 +88,7 @@ export async function startPatch(name: string, options: string[], distDir?: stri
     }
 
     console.log(c.blue('\nApplying patch...'))
-    await fs.copy(distDir, dir, {
+    await fs.copy(sourcePath, editDir, {
       overwrite: true,
       filter: (src) => {
         const result = filter(src)
@@ -74,9 +97,37 @@ export async function startPatch(name: string, options: string[], distDir?: stri
         return result
       },
     })
+
+    const localPackageJSON = await fs.readJSON(join(editDir, 'package.json'))
+    const newPackageJSON = {
+      ...localPackageJSON,
+      name,
+      version: packageJSON.version,
+      dependencies: handleDeps(localPackageJSON.dependencies, packageJSON.dependencies),
+      devDependencies: handleDeps(localPackageJSON.devDependencies, packageJSON.devDependencies),
+      peerDependencies: handleDeps(localPackageJSON.peerDependencies, packageJSON.peerDependencies),
+      optionalDependencies: handleDeps(localPackageJSON.optionalDependencies, packageJSON.optionalDependencies),
+    }
+
+    function handleDeps(local?: Record<string, string>, overrides?: Record<string, string>) {
+      if (!overrides)
+        return undefined
+      const clone = { ...local || {} }
+      Object.entries(overrides).forEach(([key, value]) => {
+        if (value.includes(':'))
+          clone[key] = '*'
+        else
+          clone[key] = value
+      })
+    }
+
+    await fs.writeJSON(join(editDir, 'package.json'), newPackageJSON, { spaces: 2 })
   }
 
   console.log(c.blue('\nCommiting patch...'))
 
-  await execa('pnpm', ['patch-commit', dir], { stdio: 'inherit' })
+  await execa('pnpm', ['patch-commit', editDir], { stdio: 'inherit' })
+
+  await fs.unlink(editDir)
+    .catch()
 }

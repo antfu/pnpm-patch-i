@@ -1,13 +1,20 @@
-import process from 'node:process'
+import { cac } from 'cac'
 import { startPatch } from '.'
 
-const [name, ...rest] = process.argv.slice(2)
-const options = rest.filter(i => i.startsWith('-'))
-const [dir] = rest.filter(i => !i.startsWith('-'))
+const cli = cac('pnpm-patch-i')
 
-if (!name) {
-  console.error('$ pnpm-patch-i <package-name> [dir]')
-  process.exit(1)
-}
+cli
+  .command('<package-name> [source-dir]', 'Patch a package')
+  .option('-y, --yes', 'Skip confirmation')
+  .option('-b, --build', 'Build the source package before patching, only available when dir is not specified')
+  .action((name, sourceDir, options) => {
+    return startPatch({
+      name,
+      yes: options.yes,
+      sourceDir,
+      build: options.build,
+    })
+  })
 
-startPatch(name, options, dir)
+cli.help()
+cli.parse()

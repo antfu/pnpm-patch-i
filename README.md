@@ -10,7 +10,7 @@ A better and interactive `pnpm patch`.
 npx pnpm-patch-i package-name
 ```
 
-This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provide a better interactive experience:
+This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provides a better interactive experience:
 
 - Have the patch dir under your local `node_modules/` folder instead of a global temp folder
 - More human-friendly folder name instead of random string
@@ -19,11 +19,13 @@ This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provide a bett
 
 ### Apply Patch from a directory
 
-It's also possible to apply a patch directly from a directory (normally a local build of the package), for example
+It's also possible to apply a patch directly from a directory (normally a local build of the package), for example:
 
 ```bash
-npx pnpm-patch-i vite ../vite/packages/vite
+npx pnpm-patch-i vite ../vite/packages/vite --build
 ```
+
+`--build` (`-b`) flag will invoke `npm run build` in the source directory before applying the patch.
 
 ## Sponsors
 
