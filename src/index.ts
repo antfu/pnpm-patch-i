@@ -114,14 +114,14 @@ export async function startPatch(options: StartPatchOptions) {
     function handleDeps(local?: Record<string, string>, overrides?: Record<string, string>) {
       if (!overrides)
         return undefined
-      const clone = { ...local || {} }
+      const result: Record<string, string> = { }
       Object.entries(overrides).forEach(([key, value]) => {
         if (value.includes(':'))
-          clone[key] = '*'
+          result[key] = local?.[key] || '*'
         else
-          clone[key] = value
+          result[key] = value
       })
-      return clone
+      return result
     }
 
     await fs.writeJSON(join(editDir, 'package.json'), newPkg, { spaces: 2 })
