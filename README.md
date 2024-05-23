@@ -16,6 +16,7 @@ This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provides a bet
 - More human-friendly folder name instead of random string
 - Open the editing folder in your editor via [`launch-editor`](https://github.com/yyx990803/launch-editor)
 - Wait for your changes and automatically run `pnpm commit-patch <dir>` for you
+- Always runs at where `pnpm-lock.yaml` is located
 
 ### Apply Patch from a directory
 

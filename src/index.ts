@@ -1,10 +1,12 @@
 /* eslint-disable no-console */
+import { dirname } from 'node:path'
 import { join, relative, resolve } from 'pathe'
 import { customAlphabet } from 'nanoid/non-secure'
 import { execa } from 'execa'
 import fs from 'fs-extra'
 import mm from 'micromatch'
 import prompts from 'prompts'
+import { findUp } from 'find-up'
 
 // @ts-expect-error missing types
 import launch from 'launch-editor'
@@ -29,9 +31,14 @@ export async function startPatch(options: StartPatchOptions) {
     pnpmOptions = [],
   } = options
 
-  const editDir = `node_modules/.patch-edits/patch_edit_${name.replace(/\//g, '+')}_${nanoid()}`
+  const lockfile = await findUp('pnpm-lock.yaml')
+  if (!lockfile)
+    throw new Error('Failed to locate pnpm-lock.yaml')
+  const cwd = dirname(lockfile)
 
-  await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, name], { stdio: 'inherit' })
+  const editDir = join(cwd, `node_modules/.patch-edits/patch_edit_${name.replace(/\//g, '+')}_${nanoid()}`)
+
+  await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, name], { stdio: 'inherit', cwd })
 
   if (!sourceDir) {
     await launch(editDir)
@@ -54,13 +61,13 @@ export async function startPatch(options: StartPatchOptions) {
     }
   }
   else {
-    const sourcePath = resolve(sourceDir)
+    const sourcePath = resolve(cwd, sourceDir)
     const sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
 
     const confirm = yes || await prompts([{
       name: 'confirm',
       type: 'confirm',
-      message: `Applying patch from ${options.sourceDir}?`,
+      message: `Applying patch from ${sourcePath}?`,
       initial: true,
     }]).then(r => r.confirm)
 
@@ -99,35 +106,31 @@ export async function startPatch(options: StartPatchOptions) {
     })
 
     const localPkg = await fs.readJSON(join(editDir, 'package.json'))
-    const newPkg = { ...sourcePkg }
 
-    newPkg.version = localPkg.version
-    if (newPkg.dependencies)
-      newPkg.dependencies = handleDeps(localPkg.dependencies, sourcePkg.dependencies)
-    if (newPkg.devDependencies)
-      newPkg.devDependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies)
-    if (newPkg.peerDependencies)
-      newPkg.peerDependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies)
-    if (newPkg.optionalDependencies)
-      newPkg.optionalDependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies)
+    if (sourcePkg.dependencies)
+      localPkg.dependencies = handleDeps(localPkg.dependencies, sourcePkg.dependencies)
+    if (sourcePkg.devDependencies)
+      localPkg.dependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies)
+    if (sourcePkg.peerDependencies)
+      localPkg.dependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies)
+    if (sourcePkg.optionalDependencies)
+      localPkg.dependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies)
 
-    function handleDeps(local?: Record<string, string>, overrides?: Record<string, string>) {
+    function handleDeps(local: Record<string, string> = {}, overrides?: Record<string, string>) {
       if (!overrides)
         return undefined
-      const result: Record<string, string> = { }
-      Object.entries(overrides).forEach(([key, value]) => {
-        if (value.includes(':'))
-          result[key] = local?.[key] || '*'
-        else
-          result[key] = value
-      })
-      return result
+      const extraKeys = Object.keys(local).filter(k => !Object.keys(overrides).includes(k))
+      for (const key of extraKeys)
+        delete local[key]
+      for (const [key, value] of Object.entries(overrides))
+        local[key] = value
+      return local
     }
 
-    await fs.writeJSON(join(editDir, 'package.json'), newPkg, { spaces: 2 })
+    await fs.writeJSON(join(editDir, 'package.json'), localPkg, { spaces: 2 })
   }
 
   console.log(c.blue('\nCommiting patch...'))
 
-  await execa('pnpm', ['patch-commit', editDir], { stdio: 'inherit' })
+  await execa('pnpm', ['patch-commit', editDir], { stdio: 'inherit', cwd })
 }
