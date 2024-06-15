@@ -110,11 +110,11 @@ export async function startPatch(options: StartPatchOptions) {
     if (sourcePkg.dependencies)
       localPkg.dependencies = handleDeps(localPkg.dependencies, sourcePkg.dependencies)
     if (sourcePkg.devDependencies)
-      localPkg.dependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies)
+      localPkg.devDependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies)
     if (sourcePkg.peerDependencies)
-      localPkg.dependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies)
+      localPkg.peerDependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies)
     if (sourcePkg.optionalDependencies)
-      localPkg.dependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies)
+      localPkg.optionalDependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies)
 
     function handleDeps(local: Record<string, string> = {}, overrides?: Record<string, string>) {
       if (!overrides)
