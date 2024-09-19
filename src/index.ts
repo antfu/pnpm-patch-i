@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import mm from 'micromatch'
 import prompts from 'prompts'
 import { findUp } from 'find-up'
+import { getPackageInfo, isPackageExists } from 'local-pkg'
 
 // @ts-expect-error missing types
 import launch from 'launch-editor'
@@ -36,9 +37,16 @@ export async function startPatch(options: StartPatchOptions) {
     throw new Error('Failed to locate pnpm-lock.yaml')
   const cwd = dirname(lockfile)
 
+  if (!isPackageExists(name)) {
+    console.log(c.yellow(`\n${name} is not founded, skipping patching...`))
+    return
+  }
+
+  const { version } = (await getPackageInfo(name))!
+
   const editDir = join(cwd, `node_modules/.patch-edits/patch_edit_${name.replace(/\//g, '+')}_${nanoid()}`)
 
-  await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, name], { stdio: 'inherit', cwd })
+  await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, `${name}@${version}`], { stdio: 'inherit', cwd })
 
   if (!sourceDir) {
     await launch(editDir)

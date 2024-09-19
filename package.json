@@ -58,6 +58,7 @@
     "find-up": "^7.0.0",
     "fs-extra": "^11.2.0",
     "launch-editor": "^2.6.1",
+    "local-pkg": "^0.5.0",
     "micromatch": "^4.0.7",
     "nanoid": "^5.0.7",
     "pathe": "^1.1.2",
