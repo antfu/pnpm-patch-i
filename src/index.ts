@@ -10,7 +10,7 @@ import { findUp } from 'find-up'
 
 // @ts-expect-error missing types
 import launch from 'launch-editor'
-import c from 'picocolors'
+import c from 'ansis'
 
 const nanoid = customAlphabet('1234567890abcdef', 10)
 
@@ -46,7 +46,7 @@ export async function startPatch(options: StartPatchOptions) {
     if (build)
       throw new Error('--build is not supported when sourceDir is not specified')
 
-    console.log(`Edit your patch for ${c.bold(c.yellow(name))} under ${c.green(editDir)}\n`)
+    console.log(`Edit your patch for ${c.bold.yellow(name)} under ${c.green(editDir)}\n`)
 
     const confirm = yes || await prompts([{
       name: 'confirm',
