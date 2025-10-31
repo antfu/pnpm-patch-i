@@ -92,14 +92,15 @@ export async function startPatch(options: StartPatchOptions) {
 
     if (pack) {
       const dir = tmpdir()
-      const unpackDir = resolve(dir, `unpacked_${id}`)
-      const tgzPath = resolve(dir, `packed_${id}.tgz`)
+      const unpackDir = resolve(dir, `pnpm-patch-i-unpacked_${id}`)
+      const tgzPath = resolve(dir, `pnpm-patch-i-packed_${id}.tgz`)
       console.log(c.blue(`Packing ${sourcePath} to ${tgzPath}`))
       await execa('pnpm', ['pack', '--out', tgzPath], { stdio: 'inherit', cwd: sourcePath })
       console.log(c.blue(`Unpacking ${tgzPath} to ${unpackDir}`))
+      await fs.mkdir(unpackDir, { recursive: true })
       // TODO: support windows, contribution welcome
       await execa('tar', ['-xzf', tgzPath, '-C', unpackDir])
-      sourcePath = unpackDir
+      sourcePath = join(unpackDir, 'package')
       glob = undefined
     }
 
