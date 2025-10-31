@@ -1,17 +1,15 @@
 /* eslint-disable no-console */
-import { dirname } from 'node:path'
 import { tmpdir } from 'node:os'
-import { join, relative, resolve } from 'pathe'
-import { customAlphabet } from 'nanoid/non-secure'
-import { execa } from 'execa'
-import fs from 'fs-extra'
-import mm from 'micromatch'
-import prompts from 'prompts'
-import { findUp } from 'find-up'
-
-// @ts-expect-error missing types
-import launch from 'launch-editor'
+import { dirname } from 'node:path'
 import c from 'ansis'
+import { execa } from 'execa'
+import { findUp } from 'find-up'
+import fs from 'fs-extra'
+import launch from 'launch-editor'
+import mm from 'micromatch'
+import { customAlphabet } from 'nanoid/non-secure'
+import { join, relative, resolve } from 'pathe'
+import prompts from 'prompts'
 
 const nanoid = customAlphabet('1234567890abcdef', 10)
 
@@ -82,8 +80,10 @@ export async function startPatch(options: StartPatchOptions) {
       return
     }
 
-    if (build)
+    if (build) {
+      console.log(c.blue(`Building ${sourcePath}`))
       await execa('npm', ['run', 'build'], { stdio: 'inherit', cwd: sourcePath })
+    }
 
     let glob = sourcePkg.files
       ? sourcePkg.files.flatMap((i: string) => i.includes('*') ? [i] : [i, `${i}/**`])
@@ -93,8 +93,10 @@ export async function startPatch(options: StartPatchOptions) {
       const dir = tmpdir()
       const folderName = `pnpm-patch-i-${name}-${sourcePkg.version}-${nanoid()}`
       const packPath = resolve(dir, `${folderName}.tgz`)
+      console.log(c.blue(`Packing ${sourcePath} to ${packPath}`))
       await execa('pnpm', ['pack', '--pack-destination', packPath], { stdio: 'inherit', cwd: sourcePath })
       console.log(c.blue(`Unpacking ${packPath} to ${resolve(dir, folderName)}`))
+      // TODO: support windows, contribution welcome
       await execa('tar', ['-xzf', packPath, '-C', resolve(dir, folderName)])
       sourcePath = resolve(dir, folderName)
       glob = undefined
