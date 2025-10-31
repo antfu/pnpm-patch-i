@@ -95,7 +95,7 @@ export async function startPatch(options: StartPatchOptions) {
       const unpackDir = resolve(dir, `unpacked_${id}`)
       const tgzPath = resolve(dir, `packed_${id}.tgz`)
       console.log(c.blue(`Packing ${sourcePath} to ${tgzPath}`))
-      await execa('pnpm', ['pack', '--pack-destination', tgzPath], { stdio: 'inherit', cwd: sourcePath })
+      await execa('pnpm', ['pack', '--out', tgzPath], { stdio: 'inherit', cwd: sourcePath })
       console.log(c.blue(`Unpacking ${tgzPath} to ${unpackDir}`))
       // TODO: support windows, contribution welcome
       await execa('tar', ['-xzf', tgzPath, '-C', unpackDir])
