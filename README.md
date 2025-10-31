@@ -20,13 +20,17 @@ This CLI wraps with [`pnpm patch`](https://pnpm.io/cli/patch) and provides a bet
 
 ### Apply Patch from a directory
 
-It's also possible to apply a patch directly from a directory (normally a local build of the package), for example:
+It's also possible to apply a patch directly from a directory, for example:
 
 ```bash
-npx pnpm-patch-i vite ../vite/packages/vite --build
+npx pnpm-patch-i vite ../vite/packages/vite
 ```
 
-`--build` (`-b`) flag will invoke `npm run build` in the source directory before applying the patch.
+You can also use `--build` (`-b`) flag to invoke `npm run build` in the source directory before applying the patch.
+
+> [!NOTE]
+> If the source package is in a monorepo with custom linking, or using catalogs, directly applying the patch from a directory might resulting copying the linking where the current project might not be able to resolve.
+> In that case, it's recommended to pack the source package into a tgz file and apply the patch from the tgz file with `--pack` (`-p`) flag.
 
 ## Sponsors
 

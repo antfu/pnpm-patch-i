@@ -37,7 +37,8 @@ export async function startPatch(options: StartPatchOptions) {
     throw new Error('Failed to locate pnpm-lock.yaml')
   const cwd = dirname(lockfile)
 
-  const editDir = join(cwd, `node_modules/.patch-edits/patch_edit_${name.replace(/\//g, '+')}_${nanoid()}`)
+  const id = `${name.replace(/\//g, '+')}-${nanoid()}`
+  const editDir = join(cwd, `node_modules/.patch-edits/patch_edit_${id}`)
 
   await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, name], { stdio: 'inherit', cwd })
 
@@ -91,7 +92,7 @@ export async function startPatch(options: StartPatchOptions) {
 
     if (pack) {
       const dir = tmpdir()
-      const folderName = `pnpm-patch-i-${name}-${sourcePkg.version}-${nanoid()}`
+      const folderName = `pnpm-patch-i-${id}`
       const packPath = resolve(dir, `${folderName}.tgz`)
       console.log(c.blue(`Packing ${sourcePath} to ${packPath}`))
       await execa('pnpm', ['pack', '--pack-destination', packPath], { stdio: 'inherit', cwd: sourcePath })
