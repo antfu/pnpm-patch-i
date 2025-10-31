@@ -67,7 +67,7 @@ export async function startPatch(options: StartPatchOptions) {
   }
   else {
     let sourcePath = resolve(cwd, sourceDir)
-    const sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
+    let sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
 
     const confirm = yes || await prompts([{
       name: 'confirm',
@@ -101,6 +101,7 @@ export async function startPatch(options: StartPatchOptions) {
       // TODO: support windows, contribution welcome
       await execa('tar', ['-xzf', tgzPath, '-C', unpackDir])
       sourcePath = join(unpackDir, 'package')
+      sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
       glob = undefined
     }
 
