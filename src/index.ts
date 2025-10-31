@@ -37,7 +37,7 @@ export async function startPatch(options: StartPatchOptions) {
     throw new Error('Failed to locate pnpm-lock.yaml')
   const cwd = dirname(lockfile)
 
-  const id = `${name.replace(/\//g, '+')}-${nanoid()}`
+  const id = `${name.replace(/\W+/g, '_')}_${nanoid()}`
   const editDir = join(cwd, `node_modules/.patch-edits/patch_edit_${id}`)
 
   await execa('pnpm', ['patch', ...pnpmOptions, '--edit-dir', editDir, name], { stdio: 'inherit', cwd })
@@ -92,14 +92,14 @@ export async function startPatch(options: StartPatchOptions) {
 
     if (pack) {
       const dir = tmpdir()
-      const folderName = `pnpm-patch-i-${id}`
-      const packPath = resolve(dir, `${folderName}.tgz`)
-      console.log(c.blue(`Packing ${sourcePath} to ${packPath}`))
-      await execa('pnpm', ['pack', '--pack-destination', packPath], { stdio: 'inherit', cwd: sourcePath })
-      console.log(c.blue(`Unpacking ${packPath} to ${resolve(dir, folderName)}`))
+      const unpackDir = resolve(dir, `unpacked_${id}`)
+      const tgzPath = resolve(dir, `packed_${id}.tgz`)
+      console.log(c.blue(`Packing ${sourcePath} to ${tgzPath}`))
+      await execa('pnpm', ['pack', '--pack-destination', tgzPath], { stdio: 'inherit', cwd: sourcePath })
+      console.log(c.blue(`Unpacking ${tgzPath} to ${unpackDir}`))
       // TODO: support windows, contribution welcome
-      await execa('tar', ['-xzf', packPath, '-C', resolve(dir, folderName)])
-      sourcePath = resolve(dir, folderName)
+      await execa('tar', ['-xzf', tgzPath, '-C', unpackDir])
+      sourcePath = unpackDir
       glob = undefined
     }
 
