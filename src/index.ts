@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { dirname } from 'node:path'
+import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'pathe'
 import { customAlphabet } from 'nanoid/non-secure'
 import { execa } from 'execa'
@@ -19,6 +20,7 @@ export interface StartPatchOptions {
   yes?: boolean
   sourceDir?: string
   build?: boolean
+  pack?: boolean
   pnpmOptions?: string[]
 }
 
@@ -28,6 +30,7 @@ export async function startPatch(options: StartPatchOptions) {
     sourceDir,
     yes,
     build,
+    pack,
     pnpmOptions = [],
   } = options
 
@@ -46,6 +49,9 @@ export async function startPatch(options: StartPatchOptions) {
     if (build)
       throw new Error('--build is not supported when sourceDir is not specified')
 
+    if (pack)
+      throw new Error('--pack is not supported when sourceDir is not specified')
+
     console.log(`Edit your patch for ${c.bold.yellow(name)} under ${c.green(editDir)}\n`)
 
     const confirm = yes || await prompts([{
@@ -61,7 +67,7 @@ export async function startPatch(options: StartPatchOptions) {
     }
   }
   else {
-    const sourcePath = resolve(cwd, sourceDir)
+    let sourcePath = resolve(cwd, sourceDir)
     const sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
 
     const confirm = yes || await prompts([{
@@ -79,9 +85,20 @@ export async function startPatch(options: StartPatchOptions) {
     if (build)
       await execa('npm', ['run', 'build'], { stdio: 'inherit', cwd: sourcePath })
 
-    const glob = sourcePkg.files
+    let glob = sourcePkg.files
       ? sourcePkg.files.flatMap((i: string) => i.includes('*') ? [i] : [i, `${i}/**`])
       : undefined
+
+    if (pack) {
+      const dir = tmpdir()
+      const folderName = `pnpm-patch-i-${name}-${sourcePkg.version}-${nanoid()}`
+      const packPath = resolve(dir, `${folderName}.tgz`)
+      await execa('pnpm', ['pack', '--pack-destination', packPath], { stdio: 'inherit', cwd: sourcePath })
+      console.log(c.blue(`Unpacking ${packPath} to ${resolve(dir, folderName)}`))
+      await execa('tar', ['-xzf', packPath, '-C', resolve(dir, folderName)])
+      sourcePath = resolve(dir, folderName)
+      glob = undefined
+    }
 
     const filter = (src: string) => {
       const relativePath = relative(sourcePath, src)
