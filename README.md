@@ -28,8 +28,13 @@ npx pnpm-patch-i vite ../vite/packages/vite
 
 You can also use `--build` (`-b`) flag to invoke `npm run build` in the source directory before applying the patch.
 
+When merging the source `package.json` into the patched package, `workspace:` and `catalog:` dependency specifiers are resolved automatically:
+
+- `workspace:*` / `workspace:^` / `workspace:~` / `workspace:<range>` → reuses the version already present in the patched package's existing entry.
+- `catalog:` / `catalog:<name>` → looked up in the source repo's `pnpm-workspace.yaml` catalog definitions.
+
 > [!NOTE]
-> If the source package is in a monorepo with custom linking, or using catalogs, directly applying the patch from a directory might resulting copying the linking where the current project might not be able to resolve.
+> If the source package is in a monorepo with custom linking, directly applying the patch from a directory might result in copying the linking where the current project might not be able to resolve.
 > In that case, it's recommended to pack the source package into a tgz file and apply the patch from the tgz file with `--pack` (`-p`) flag.
 
 ## Sponsors

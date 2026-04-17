@@ -10,6 +10,7 @@ import mm from 'micromatch'
 import { customAlphabet } from 'nanoid/non-secure'
 import { join, relative, resolve } from 'pathe'
 import prompts from 'prompts'
+import { parse as parseYaml } from 'yaml'
 
 const nanoid = customAlphabet('1234567890abcdef', 10)
 
@@ -66,7 +67,8 @@ export async function startPatch(options: StartPatchOptions) {
     }
   }
   else {
-    let sourcePath = resolve(cwd, sourceDir)
+    const originalSourcePath = resolve(cwd, sourceDir)
+    let sourcePath = originalSourcePath
     let sourcePkg = await fs.readJSON(join(sourcePath, 'package.json'))
 
     const confirm = yes || await prompts([{
@@ -129,23 +131,29 @@ export async function startPatch(options: StartPatchOptions) {
 
     const localPkg = await fs.readJSON(join(editDir, 'package.json'))
 
-    if (sourcePkg.dependencies)
-      localPkg.dependencies = handleDeps(localPkg.dependencies, sourcePkg.dependencies)
-    if (sourcePkg.devDependencies)
-      localPkg.devDependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies)
-    if (sourcePkg.peerDependencies)
-      localPkg.peerDependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies)
-    if (sourcePkg.optionalDependencies)
-      localPkg.optionalDependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies)
+    const catalogs = pack ? undefined : await readSourceCatalogs(originalSourcePath)
 
-    function handleDeps(local: Record<string, string> = {}, overrides?: Record<string, string>) {
+    if (sourcePkg.dependencies)
+      localPkg.dependencies = handleDeps(localPkg.dependencies, sourcePkg.dependencies, catalogs)
+    if (sourcePkg.devDependencies)
+      localPkg.devDependencies = handleDeps(localPkg.devDependencies, sourcePkg.devDependencies, catalogs)
+    if (sourcePkg.peerDependencies)
+      localPkg.peerDependencies = handleDeps(localPkg.peerDependencies, sourcePkg.peerDependencies, catalogs)
+    if (sourcePkg.optionalDependencies)
+      localPkg.optionalDependencies = handleDeps(localPkg.optionalDependencies, sourcePkg.optionalDependencies, catalogs)
+
+    function handleDeps(
+      local: Record<string, string> = {},
+      overrides: Record<string, string> | undefined,
+      catalogs: Catalogs | undefined,
+    ) {
       if (!overrides)
         return undefined
       const extraKeys = Object.keys(local).filter(k => !Object.keys(overrides).includes(k))
       for (const key of extraKeys)
         delete local[key]
       for (const [key, value] of Object.entries(overrides))
-        local[key] = value
+        local[key] = resolveDepValue(key, value, local[key], catalogs)
       return local
     }
 
@@ -155,4 +163,64 @@ export async function startPatch(options: StartPatchOptions) {
   console.log(c.blue('\nCommiting patch...'))
 
   await execa('pnpm', ['patch-commit', editDir], { stdio: 'inherit', cwd })
+}
+
+interface Catalogs {
+  default: Record<string, string>
+  named: Record<string, Record<string, string>>
+}
+
+async function readSourceCatalogs(sourcePath: string): Promise<Catalogs | undefined> {
+  const workspaceFile = await findUp('pnpm-workspace.yaml', { cwd: sourcePath })
+  if (!workspaceFile)
+    return undefined
+  try {
+    const raw = await fs.readFile(workspaceFile, 'utf8')
+    const data = parseYaml(raw) ?? {}
+    return {
+      default: data.catalog ?? {},
+      named: data.catalogs ?? {},
+    }
+  }
+  catch (err) {
+    console.warn(c.yellow(`Failed to read catalogs from ${workspaceFile}: ${(err as Error).message}`))
+    return undefined
+  }
+}
+
+function resolveDepValue(
+  name: string,
+  value: string,
+  localValue: string | undefined,
+  catalogs: Catalogs | undefined,
+): string {
+  if (value.startsWith('workspace:')) {
+    if (localValue) {
+      console.log(c.dim(`  resolved ${name}: ${value} → ${localValue}`))
+      return localValue
+    }
+    const suffix = value.slice('workspace:'.length)
+    if (suffix && !'*^~'.includes(suffix)) {
+      console.log(c.dim(`  resolved ${name}: ${value} → ${suffix}`))
+      return suffix
+    }
+    console.warn(c.yellow(`  could not resolve ${name}: ${value} (no local version), keeping literal`))
+    return value
+  }
+  if (value.startsWith('catalog:')) {
+    const catalogName = value.slice('catalog:'.length)
+    const table = catalogName ? catalogs?.named[catalogName] : catalogs?.default
+    const resolved = table?.[name]
+    if (resolved) {
+      console.log(c.dim(`  resolved ${name}: ${value} → ${resolved}`))
+      return resolved
+    }
+    console.warn(c.yellow(`  could not resolve ${name}: ${value} (no matching catalog entry), keeping literal`))
+    return value
+  }
+  const protocolMatch = value.match(/^([a-z][a-z+-]*):/i)
+  if (protocolMatch) {
+    console.warn(c.yellow(`  ${name}: ${value} uses unrecognized protocol "${protocolMatch[1]}:", keeping literal — the consumer may not be able to resolve it`))
+  }
+  return value
 }
